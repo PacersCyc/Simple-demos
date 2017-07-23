@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+<head>
+	<title>Lordmore</title>
+	<style type="text/css">
+	*{
+		margin:0;
+		padding:0;
+	}
+	body{
+		font-family: "微软雅黑";
+	}
+	ul{
+		list-style: none;
+	}
+	#ct>li{
+		padding:10px;
+		margin:10px 20px;
+		border:1px solid #000;
+		cursor:pointer;
+	}
+	#ct>li:hover{
+		background: yellow;
+	}
+	#btn{
+		text-decoration: none;
+		display:block;
+		text-align: center;
+		margin:0 auto;
+		width:80px;
+		height:40px;
+		line-height:40px;
+		border:1px solid #ccc;
+		background:#00f;
+		color:#fff;
+		font-weight:bold;
+	}
+	</style>
+</head>
+<body>
+	<ul id="ct">
+		<li>内容1</li>
+		<li>内容2</li>	
+	</ul>
+
+	<a id="btn" href="javascript:void(0)">加载更多</a>
+	<!--javascript:void(0)阻止a链接默认事件-->
+</body>
+
+	<script type="text/javascript">
+		var ct = document.querySelector('#ct'),
+			btn = document.querySelector('#btn'),
+			pageIndex = 3,
+			isDataArrive = true;//添加状态锁
+
+
+		btn.addEventListener('click',function(){
+			if(!isDataArrive){
+				return;
+			}else{
+				loadData(function(content){
+					renderPage(content);
+					pageIndex += 6;
+					isDataArrive = true;
+				})
+				isDataArrive = false;
+			}
+		})
+
+		function loadData(callback){
+			ajax({
+				type:'get',
+				url:'/loadMore',
+				data:{
+					index:pageIndex,
+					length:6
+				},
+				onSuccess:callback,
+				onError:function(){
+					console.log('出错了')
+				}
+			})
+		}
+
+		function renderPage(content){
+				var fragment = document.createDocumentFragment();
+				//使用document.createDocumentFragment()实现一次重绘，提高性能
+				for(var i = 0;i<content.length;i++){
+					var node = document.createElement('li');
+					node.innerText = content[i];
+				//防止用户写入带有恶意JS代码的script标签，使用innerText
+					fragment.appendChild(node);
+				}
+				ct.appendChild(fragment);
+		}
+
+		//封装Ajax，仅针对get请求
+		function ajax(options){
+			var xhr = new XMLHttpRequest();
+			xhr.onreadystatechange = function(){
+				if(xhr.readyState===4){
+					if(xhr.status===200||xhr.status===304){
+						var results = JSON.parse(xhr.responseText);
+						console.log(results);
+						options.onSuccess(results);
+					}else{
+						options.onError();
+					}
+				}
+			}
+			var query = "?"; 
+			for(key in options.data){
+				query += key+'='+options.data[key]+'&';
+			}
+			query = query.substr(0,query.length-1);
+			xhr.open(options.type,options.url+query,true);
+			xhr.send();
+		}
+	</script>
+
+
+</html>
